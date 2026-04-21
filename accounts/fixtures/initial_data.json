@@ -1,0 +1,20 @@
+[
+    {
+        "model": "accounts.role",
+        "pk": 1,
+        "fields": {
+            "role_name": "usuario",
+            "role_description": "Usuario estándar de la plataforma",
+            "created_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "accounts.role",
+        "pk": 2,
+        "fields": {
+            "role_name": "administrador",
+            "role_description": "Administrador del sistema",
+            "created_at": "2024-01-01T00:00:00Z"
+        }
+    }
+]

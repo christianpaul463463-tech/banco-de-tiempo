@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="{ title: '', description: '', categoryName: '', estimatedTime: 1.0 }">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Publicar un servicio</h1>
+        <p class="text-gray-500 mt-1">Ofrece tus habilidades a la comunidad y empieza a ganar horas.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
+                <form method="post" action="{% url 'service_create' %}" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Título del servicio</label>
+                        <input type="text" id="title" name="title" x-model="title" required minlength="10" maxlength="200" placeholder="Ej. Clases de Guitarra Acústica" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full">
+                    </div>
+
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                        <select id="category" name="category" required class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full" @change="categoryName = $event.target.options[$event.target.selectedIndex].text">
+                            <option value="" disabled selected>Selecciona una categoría</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.pk }}">{{ cat.category_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Descripción detallada</label>
+                        <textarea id="description" name="description" x-model="description" required minlength="30" rows="5" placeholder="Describe qué ofreces, cómo lo harás y qué necesita saber o preparar la otra persona..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="estimated_time" class="block text-sm font-medium text-gray-700 mb-1">Tiempo estimado (horas)</label>
+                            <input type="number" id="estimated_time" name="estimated_time" x-model="estimatedTime" required min="0.5" max="8" step="0.5" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full">
+                        </div>
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                            <select id="status" name="status" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full">
+                                <option value="active" selected>Activo (Visible)</option>
+                                <option value="inactive">Inactivo (Oculto)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                        <a href="{% url 'dashboard' %}" class="bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-6 py-2.5 rounded-lg font-medium transition-colors">Cancelar</a>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">Publicar servicio</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="lg:col-span-1">
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Vista previa</h2>
+            
+            <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden sticky top-24">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800" x-text="categoryName || 'Categoría'"></span>
+                        <span class="text-sm font-bold text-gray-900" x-text="estimatedTime + ' hrs'"></span>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-gray-900 mb-2" x-text="title || 'Título de tu servicio'"></h3>
+                    <p class="text-gray-600 text-sm mb-6 line-clamp-3" x-text="description || 'Aquí aparecerá la descripción detallada de tu servicio...'"></p>
+                    
+                    <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
+                        <img class="h-8 w-8 rounded-full object-cover" src="https://ui-avatars.com/api/?name={{ request.user.first_name|default:request.user.username }}&background=4f46e5&color=fff" alt="">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ request.user.first_name|default:request.user.username }}</p>
+                            <p class="text-xs text-gray-500">Recién publicado</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-3 border-t border-gray-100">
+                    <button disabled class="w-full text-center text-sm font-medium text-gray-400 cursor-not-allowed">
+                        Solicitar servicio
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
