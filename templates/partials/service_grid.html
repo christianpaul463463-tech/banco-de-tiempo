@@ -1,0 +1,41 @@
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for service in services %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow">
+            <div class="p-6 flex-grow">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">{{ service.category.category_name }}</span>
+                    <span class="text-sm font-bold text-gray-900">{{ service.estimated_time }} hrs</span>
+                </div>
+                
+                <h3 class="text-xl font-bold text-gray-900 mb-2">{{ service.title }}</h3>
+                <p class="text-gray-600 text-sm mb-6 line-clamp-3">{{ service.description }}</p>
+                
+                <div class="flex items-center gap-3 mt-auto pt-4 border-t border-gray-100">
+                    <img class="h-8 w-8 rounded-full object-cover" src="https://ui-avatars.com/api/?name={{ service.client.first_name|default:service.client.username }}&background=random" alt="">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">{{ service.client.first_name|default:service.client.username }}</p>
+                        <p class="text-xs text-gray-500">{{ service.created_at|date:"d M Y" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 px-6 py-3 border-t border-gray-100">
+                {% if request.user == service.client %}
+                    <div class="text-center">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-800">Tu servicio</span>
+                    </div>
+                {% else %}
+                    <button @click="openModal({{ service.pk }}, '{{ service.title|escapejs }}', '{{ service.client.first_name|default:service.client.username|escapejs }}', {{ service.estimated_time }})" class="w-full text-center text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors">
+                        Solicitar servicio
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-span-full py-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No se encontraron servicios</h3>
+            <p class="mt-1 text-sm text-gray-500">Prueba ajustando los filtros de búsqueda o categoría.</p>
+        </div>
+    {% endfor %}
+</div>
