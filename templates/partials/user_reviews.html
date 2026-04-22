@@ -1,0 +1,36 @@
+<div class="space-y-6">
+    <div class="flex items-center gap-4 mb-6">
+        <div class="text-3xl font-bold text-gray-900">{{ average_rating|default:"0.0"|floatformat:1 }}</div>
+        <div class="flex flex-col">
+            <div class="flex text-yellow-400">
+                {% for i in "12345" %}
+                    <svg class="h-5 w-5 {% if forloop.counter <= average_rating|default:0 %}text-yellow-400{% else %}text-gray-300{% endif %}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                {% endfor %}
+            </div>
+            <span class="text-sm text-gray-500">{{ reviews.count }} reseñas</span>
+        </div>
+    </div>
+
+    {% for review in reviews %}
+        <div class="bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-2">
+                    <img class="h-6 w-6 rounded-full object-cover" src="https://ui-avatars.com/api/?name={{ review.reviewer_client.first_name|default:review.reviewer_client.username }}&background=random" alt="">
+                    <span class="text-sm font-medium text-gray-900">{{ review.reviewer_client.first_name|default:review.reviewer_client.username }}</span>
+                </div>
+                <span class="text-xs text-gray-500">{{ review.created_at|date:"d M Y" }}</span>
+            </div>
+            <div class="flex text-yellow-400 mb-2">
+                {% for i in "12345" %}
+                    <svg class="h-4 w-4 {% if forloop.counter <= review.rating %}text-yellow-400{% else %}text-gray-300{% endif %}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                {% endfor %}
+            </div>
+            {% if review.comment %}
+                <p class="text-sm text-gray-700 italic">"{{ review.comment }}"</p>
+            {% endif %}
+            <p class="text-xs font-medium text-indigo-600 mt-2">Servicio: {{ review.request.service.title }}</p>
+        </div>
+    {% empty %}
+        <p class="text-sm text-gray-500 text-center py-4">Este usuario aún no tiene reseñas.</p>
+    {% endfor %}
+</div>

@@ -128,7 +128,7 @@ class TimeTransaction(models.Model):
 
 class Review(models.Model):
     review_id = models.AutoField(primary_key=True)
-    request = models.ForeignKey(Request, on_delete=models.CASCADE)
+    request = models.OneToOneField(Request, on_delete=models.CASCADE)
     reviewer_client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='given_reviews')
     reviewed_client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='received_reviews')
     rating = models.PositiveSmallIntegerField()  # 1 a 5

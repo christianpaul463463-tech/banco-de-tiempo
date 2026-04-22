@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+            <h1 class="text-xl font-bold text-gray-900">Calificar servicio</h1>
+            <a href="javascript:history.back()" class="text-sm font-medium text-gray-500 hover:text-gray-700">← Volver</a>
+        </div>
+        
+        <div class="p-6 md:p-8">
+            {% if already_reviewed %}
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-indigo-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <h3 class="text-lg font-medium text-gray-900">Reseña completada</h3>
+                <p class="mt-2 text-sm text-gray-500">Ya dejaste una reseña para este servicio.</p>
+                <div class="mt-6">
+                    <a href="{% url 'requests_inbox' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Volver a mis solicitudes</a>
+                </div>
+            </div>
+            {% else %}
+            <div class="mb-8 text-center">
+                <p class="text-sm text-gray-500">Servicio prestado por:</p>
+                <p class="text-lg font-bold text-gray-900">{{ service_request.provider_client.first_name|default:service_request.provider_client.username }}</p>
+                <p class="text-sm font-medium text-indigo-600 mt-1">{{ service_request.service.title }}</p>
+                <p class="text-xs text-gray-400 mt-2">Aceptado el {{ service_request.responded_at|date:"d M Y" }}</p>
+            </div>
+
+            <form method="post" action="{% url 'review_create' service_request.pk %}" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="text-center" x-data="{ rating: 0, hover: 0 }">
+                    <label class="block text-sm font-medium text-gray-700 mb-4">¿Cómo calificarías este servicio?</label>
+                    <div class="flex justify-center gap-2 mb-2">
+                        <template x-for="star in [1, 2, 3, 4, 5]" :key="star">
+                            <button type="button"
+                                    @click="rating = star"
+                                    @mouseover="hover = star"
+                                    @mouseleave="hover = 0"
+                                    :class="star <= (hover || rating) ? 'text-yellow-400' : 'text-gray-300'"
+                                    class="text-4xl focus:outline-none transition-colors">
+                                ★
+                            </button>
+                        </template>
+                    </div>
+                    <input type="hidden" name="rating" :value="rating">
+                    
+                    <div class="h-6">
+                        <p x-show="rating === 1 || hover === 1" class="text-sm text-red-500 font-medium" x-cloak>Muy malo</p>
+                        <p x-show="rating === 2 || hover === 2" class="text-sm text-orange-500 font-medium" x-cloak>Malo</p>
+                        <p x-show="rating === 3 || hover === 3" class="text-sm text-yellow-500 font-medium" x-cloak>Regular</p>
+                        <p x-show="rating === 4 || hover === 4" class="text-sm text-green-500 font-medium" x-cloak>Bueno</p>
+                        <p x-show="rating === 5 || hover === 5" class="text-sm text-indigo-500 font-medium" x-cloak>Excelente</p>
+                    </div>
+
+                    <div class="mt-8 text-left">
+                        <label for="comment" class="block text-sm font-medium text-gray-700 mb-1">Comentario (opcional)</label>
+                        <textarea id="comment" name="comment" rows="4" placeholder="Cuéntanos cómo fue tu experiencia con este servicio..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full"></textarea>
+                    </div>
+
+                    <div class="pt-6 border-t border-gray-100 mt-6">
+                        <button type="submit" x-bind:disabled="rating === 0" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                            Publicar reseña
+                        </button>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
