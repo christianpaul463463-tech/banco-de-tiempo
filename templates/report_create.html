@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+            <h1 class="text-xl font-bold text-gray-900">Reportar usuario</h1>
+            <a href="javascript:history.back()" class="text-sm font-medium text-gray-500 hover:text-gray-700">← Volver</a>
+        </div>
+        
+        <div class="p-6 md:p-8">
+            <div class="mb-6 bg-red-50 text-red-800 p-4 rounded-lg flex gap-4 items-start border border-red-100">
+                <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <div class="text-sm">
+                    Estás a punto de reportar a <strong>{{ reported_client.first_name|default:reported_client.username }}</strong>. Este reporte será revisado por los administradores. El mal uso de esta herramienta puede resultar en la suspensión de tu cuenta.
+                </div>
+            </div>
+
+            <form method="post" action="{% url 'report_create' reported_client.pk %}" class="space-y-6">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="report_reason" class="block text-sm font-medium text-gray-700 mb-1">Motivo del reporte</label>
+                    <select id="report_reason" name="report_reason" required class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent w-full">
+                        <option value="" disabled selected>Selecciona un motivo</option>
+                        <option value="no_show">No se presentó al intercambio</option>
+                        <option value="fraud">Comportamiento fraudulento</option>
+                        <option value="harassment">Acoso o comportamiento inapropiado</option>
+                        <option value="fake_service">Servicio falso o engañoso</option>
+                        <option value="other">Otro motivo</option>
+                    </select>
+                </div>
+
+                {% if related_requests %}
+                <div>
+                    <label for="request_id" class="block text-sm font-medium text-gray-700 mb-1">Solicitud relacionada (opcional)</label>
+                    <select id="request_id" name="request_id" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent w-full">
+                        <option value="">-- No está relacionado a una solicitud específica --</option>
+                        {% for req in related_requests %}
+                            <option value="{{ req.pk }}">{{ req.service.title }} ({{ req.requested_at|date:"d M Y" }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div>
+                    <label for="report_description" class="block text-sm font-medium text-gray-700 mb-1">Descripción detallada</label>
+                    <textarea id="report_description" name="report_description" required minlength="20" maxlength="1000" rows="5" placeholder="Describe con detalle lo que ocurrió..." class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent w-full"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Mínimo 20 caracteres.</p>
+                </div>
+
+                <div class="pt-4 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-gray-100">
+                    <a href="javascript:history.back()" class="w-full sm:w-auto text-center bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-6 py-2.5 rounded-lg font-medium transition-colors">Cancelar</a>
+                    <button type="submit" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">Enviar reporte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

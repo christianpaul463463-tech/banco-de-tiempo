@@ -21,5 +21,17 @@ urlpatterns = [
     path('servicios/crear/', views.ServiceCreateView.as_view(), name='service_create'),
     path('servicios/', views.ServiceListView.as_view(), name='service_list'),
     path('servicios/buscar/', views.search_services, name='search_services'),
-    path('servicios/<int:pk>/solicitar/', views.request_service, name='request_service'),
+    # Solicitudes
+    path('solicitudes/', views.RequestsInboxView.as_view(), name='requests_inbox'),
+    path('solicitudes/<int:request_id>/aceptar/', views.AcceptRequestView.as_view(), name='accept_request'),
+    path('solicitudes/<int:request_id>/rechazar/', views.RejectRequestView.as_view(), name='reject_request'),
+    path('solicitudes/pendientes-count/', views.PendingCountView.as_view(), name='pending_count'),
+
+    # Reportes
+    path('reportar/<int:client_id>/', views.ReportCreateView.as_view(), name='report_create'),
+    path('admin-panel/reportes/<int:pk>/estado/<str:status>/', views.admin_change_report_status, name='admin_change_report_status'),
+
+    # Reseñas
+    path('reseñas/crear/<int:request_id>/', views.ReviewCreateView.as_view(), name='review_create'),
+    path('usuarios/<int:client_id>/reseñas/', views.UserReviewsPartialView.as_view(), name='user_reviews'),
 ]

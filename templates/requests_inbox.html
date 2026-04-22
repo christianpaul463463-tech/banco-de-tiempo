@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="{ tab: 'recibidas' }">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Mis Solicitudes</h1>
+        <p class="text-gray-500 mt-1">Gestiona los intercambios pendientes y el estado de tus peticiones.</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            <button @click="tab = 'recibidas'" 
+                    :class="tab === 'recibidas' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" 
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                Solicitudes recibidas
+                {% if received_requests %}
+                    <span class="bg-indigo-100 text-indigo-600 py-0.5 px-2.5 rounded-full text-xs ml-2">{{ received_requests.count }}</span>
+                {% endif %}
+            </button>
+            <button @click="tab = 'enviadas'" 
+                    :class="tab === 'enviadas' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" 
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                Mis solicitudes enviadas
+            </button>
+        </nav>
+    </div>
+
+    <!-- Tab 1: Solicitudes recibidas -->
+    <div x-show="tab === 'recibidas'" class="space-y-4">
+        {% for req in received_requests %}
+            <div class="request-card bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+                <div class="flex items-start gap-4 w-full">
+                    <img class="h-10 w-10 rounded-full object-cover" src="https://ui-avatars.com/api/?name={{ req.requester_client.first_name|default:req.requester_client.username }}&background=random" alt="">
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-bold text-gray-900">{{ req.requester_client.first_name|default:req.requester_client.username }}</h3>
+                            <span class="text-xs text-gray-500">{{ req.requested_at|timesince }} atrás</span>
+                        </div>
+                        <p class="text-sm font-medium text-indigo-600 mb-1">Solicita: {{ req.service.title }} ({{ req.requested_hours }} hrs)</p>
+                        {% if req.request_message %}
+                            <p class="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100 italic">"{{ req.request_message }}"</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 w-full md:w-auto mt-4 md:mt-0 flex-shrink-0">
+                    <button hx-post="{% url 'accept_request' req.request_id %}" 
+                            hx-target="closest .request-card" 
+                            hx-swap="outerHTML" 
+                            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                            class="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors text-center shadow-sm">
+                        Aceptar
+                    </button>
+                    <button hx-post="{% url 'reject_request' req.request_id %}" 
+                            hx-target="closest .request-card" 
+                            hx-swap="outerHTML" 
+                            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                            hx-confirm="¿Estás seguro de rechazar esta solicitud?"
+                            class="flex-1 md:flex-none bg-white text-red-600 border border-red-600 hover:bg-red-50 px-4 py-2 rounded-lg font-medium text-sm transition-colors text-center">
+                        Rechazar
+                    </button>
+                </div>
+            </div>
+        {% empty %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Bandeja vacía</h3>
+                <p class="mt-1 text-sm text-gray-500">No tienes solicitudes pendientes por responder.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Tab 2: Solicitudes enviadas -->
+    <div x-show="tab === 'enviadas'" class="space-y-4" x-cloak>
+        {% for req in sent_requests %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">{{ req.service.title }}</h3>
+                    <p class="text-sm text-gray-600">Proveedor: <span class="font-medium">{{ req.provider_client.first_name|default:req.provider_client.username }}</span></p>
+                    <p class="text-sm text-gray-500">Horas: {{ req.requested_hours }} | Solicitado: {{ req.requested_at|date:"d M Y" }}</p>
+                </div>
+                
+                <div class="flex items-center gap-4 flex-shrink-0">
+                    {% if req.request_status == 'pending' %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Pendiente</span>
+                    {% elif req.request_status == 'accepted' %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Aceptada</span>
+                        <a href="{% url 'review_create' req.request_id %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors text-center shadow-sm">Dejar reseña</a>
+                    {% elif req.request_status == 'rejected' %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">Rechazada</span>
+                    {% elif req.request_status == 'completed' %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">Completada</span>
+                    {% elif req.request_status == 'cancelled' %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">Cancelada</span>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Sin solicitudes</h3>
+                <p class="mt-1 text-sm text-gray-500">Aún no has solicitado ningún servicio. ¡Explora lo que ofrece la comunidad!</p>
+                <div class="mt-6">
+                    <a href="{% url 'service_list' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Explorar servicios</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
