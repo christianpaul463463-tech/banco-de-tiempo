@@ -13,27 +13,36 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-xl shadow-sm border border-indigo-100 p-6 flex items-center">
             <div class="rounded-full bg-indigo-100 p-3 mr-4">
-                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
             </div>
             <div>
                 <p class="text-sm font-medium text-gray-500">Saldo actual</p>
                 <p class="text-2xl font-bold text-indigo-600">{{ time_account.balance_hours|default:"0.00"|floatformat:2 }} hrs</p>
             </div>
         </div>
-        
+
         <div class="bg-white rounded-xl shadow-sm border border-green-100 p-6 flex items-center">
             <div class="rounded-full bg-green-100 p-3 mr-4">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                </svg>
             </div>
             <div>
                 <p class="text-sm font-medium text-gray-500">Total ganado</p>
                 <p class="text-2xl font-bold text-green-600">{{ time_account.total_hours_earned|default:"0.00"|floatformat:2 }} hrs</p>
             </div>
         </div>
-        
+
         <div class="bg-white rounded-xl shadow-sm border border-red-100 p-6 flex items-center">
             <div class="rounded-full bg-red-100 p-3 mr-4">
-                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                </svg>
             </div>
             <div>
                 <p class="text-sm font-medium text-gray-500">Total gastado</p>
@@ -49,11 +58,21 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Servicio</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contraparte</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Horas</th>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Servicio</th>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Contraparte</th>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Horas</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -64,90 +83,134 @@
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-900">
                             {% if transaction.request and transaction.request.service %}
-                                {% if transaction.request.service.status == 'active' %}
-                                    <a href="{% url 'service_list' %}" class="text-indigo-600 hover:underline font-medium">{{ transaction.request.service.title }}</a>
-                                {% else %}
-                                    <span class="font-medium">{{ transaction.request.service.title }}</span>
-                                {% endif %}
-                                <div class="text-xs text-gray-500 mt-1">{{ transaction.transaction_description }}</div>
+                            {% if transaction.request.service.status == 'active' %}
+                            <a href="{% url 'service_list' %}" class="text-indigo-600 hover:underline font-medium">{{
+                                transaction.request.service.title }}</a>
                             {% else %}
-                                <span class="text-gray-500 italic">No disponible</span>
-                                <div class="text-xs text-gray-500 mt-1">{{ transaction.transaction_description }}</div>
+                            <span class="font-medium">{{ transaction.request.service.title }}</span>
+                            {% endif %}
+                            <div class="text-xs text-gray-500 mt-1">{{ transaction.transaction_description }}</div>
+                            {% else %}
+                            <span class="text-gray-500 italic">No disponible</span>
+                            <div class="text-xs text-gray-500 mt-1">{{ transaction.transaction_description }}</div>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center gap-2 mt-2">
                             {% if transaction.sender_client == request.user %}
-                                <img class="h-6 w-6 rounded-full" src="https://ui-avatars.com/api/?name={{ transaction.receiver_client.first_name|default:transaction.receiver_client.username }}&background=e2e8f0&color=475569" alt="">
-                                <span>{{ transaction.receiver_client.get_full_name|default:transaction.receiver_client.username }}</span>
+                            <img class="h-6 w-6 rounded-full"
+                                src="https://ui-avatars.com/api/?name={{ transaction.receiver_client.first_name|default:transaction.receiver_client.username }}&background=e2e8f0&color=475569"
+                                alt="">
+                            <span>{{
+                                transaction.receiver_client.get_full_name|default:transaction.receiver_client.username
+                                }}</span>
                             {% else %}
-                                <img class="h-6 w-6 rounded-full" src="https://ui-avatars.com/api/?name={{ transaction.sender_client.first_name|default:transaction.sender_client.username }}&background=e2e8f0&color=475569" alt="">
-                                <span>{{ transaction.sender_client.get_full_name|default:transaction.sender_client.username }}</span>
+                            <img class="h-6 w-6 rounded-full"
+                                src="https://ui-avatars.com/api/?name={{ transaction.sender_client.first_name|default:transaction.sender_client.username }}&background=e2e8f0&color=475569"
+                                alt="">
+                            <span>{{ transaction.sender_client.get_full_name|default:transaction.sender_client.username
+                                }}</span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if transaction.transaction_type == 'transfer' %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Transferencia</span>
+                            <span
+                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Transferencia</span>
                             {% elif transaction.transaction_type == 'bonus' %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Bono</span>
+                            <span
+                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Bono</span>
                             {% elif transaction.transaction_type == 'deduction' %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Deducción</span>
+                            <span
+                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Deducción</span>
                             {% else %}
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">{{ transaction.get_transaction_type_display }}</span>
+                            <span
+                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">{{
+                                transaction.get_transaction_type_display }}</span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                             {% if transaction.sender_client == request.user %}
-                                <!-- Es un egreso: el usuario pagó -->
-                                <span class="text-red-600 font-bold">- {{ transaction.hours_amount|floatformat:2 }} hrs</span>
+                            <!-- Es un egreso: el usuario pagó -->
+                            <span class="text-red-600 font-bold">- {{ transaction.hours_amount|floatformat:2 }}
+                                hrs</span>
                             {% else %}
-                                <!-- Es un ingreso: el usuario cobró -->
-                                <span class="text-green-600 font-bold">+ {{ transaction.hours_amount|floatformat:2 }} hrs</span>
+                            <!-- Es un ingreso: el usuario cobró -->
+                            <span class="text-green-600 font-bold">+ {{ transaction.hours_amount|floatformat:2 }}
+                                hrs</span>
                             {% endif %}
                         </td>
                     </tr>
-                    {% endendfor %}
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Paginación -->
         {% if transactions.has_other_pages %}
         <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6 flex items-center justify-between">
             <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                     <p class="text-sm text-gray-700">
-                        Mostrando página <span class="font-medium">{{ transactions.number }}</span> de <span class="font-medium">{{ transactions.paginator.num_pages }}</span>
+                        Mostrando página <span class="font-medium">{{ transactions.number }}</span> de <span
+                            class="font-medium">{{ transactions.paginator.num_pages }}</span>
                     </p>
                 </div>
                 <div>
                     <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                         {% if transactions.has_previous %}
-                        <a href="?page={{ transactions.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <a href="?page={{ transactions.previous_page_number }}"
+                            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                             <span class="sr-only">Anterior</span>
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd"
+                                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                                    clip-rule="evenodd" />
+                            </svg>
                         </a>
                         {% else %}
-                        <span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                        <span
+                            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd"
+                                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                                    clip-rule="evenodd" />
+                            </svg>
                         </span>
                         {% endif %}
-                        
+
                         {% for i in transactions.paginator.page_range %}
-                            {% if transactions.number == i %}
-                            <span aria-current="page" class="z-10 bg-indigo-50 border-indigo-500 text-indigo-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">{{ i }}</span>
-                            {% else %}
-                            <a href="?page={{ i }}" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">{{ i }}</a>
-                            {% endif %}
+                        {% if transactions.number == i %}
+                        <span aria-current="page"
+                            class="z-10 bg-indigo-50 border-indigo-500 text-indigo-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">{{
+                            i }}</span>
+                        {% else %}
+                        <a href="?page={{ i }}"
+                            class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">{{
+                            i }}</a>
+                        {% endif %}
                         {% endfor %}
 
                         {% if transactions.has_next %}
-                        <a href="?page={{ transactions.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <a href="?page={{ transactions.next_page_number }}"
+                            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                             <span class="sr-only">Siguiente</span>
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd"
+                                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                    clip-rule="evenodd" />
+                            </svg>
                         </a>
                         {% else %}
-                        <span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                        <span
+                            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd"
+                                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                    clip-rule="evenodd" />
+                            </svg>
                         </span>
                         {% endif %}
                     </nav>
@@ -155,15 +218,20 @@
             </div>
         </div>
         {% endif %}
-        
+
         {% else %}
         <!-- Estado vacío -->
         <div class="text-center py-16 px-4 sm:px-6 lg:px-8">
-            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
             <h3 class="mt-2 text-sm font-medium text-gray-900">No hay transacciones</h3>
-            <p class="mt-1 text-sm text-gray-500">Aún no tienes movimientos en tu cuenta de tiempo. Solicita o acepta un servicio para empezar.</p>
+            <p class="mt-1 text-sm text-gray-500">Aún no tienes movimientos en tu cuenta de tiempo. Solicita o acepta un
+                servicio para empezar.</p>
             <div class="mt-6">
-                <a href="{% url 'service_list' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <a href="{% url 'service_list' %}"
+                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Explorar servicios
                 </a>
             </div>
