@@ -1,0 +1,75 @@
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# ========================
+# Django
+# ========================
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static_collected/
+
+# ========================
+# Entornos virtuales
+# ========================
+venv/
+env/
+.env
+.venv
+ENV/
+env.bak/
+venv.bak/
+
+# ========================
+# Variables de entorno
+# ========================
+.env
+.env.*
+!.env.example
+
+# ========================
+# IDEs y editores
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ========================
+# Migraciones generadas localmente
+# (conservar las del repositorio)
+# ========================
+# migrations/   <-- NO ignorar, las migraciones sí van al repo
+
+# ========================
+# Cobertura y testing
+# ========================
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+
+# ========================
+# Distribución / empaquetado
+# ========================
+dist/
+build/
+*.egg-info/
+.eggs/
