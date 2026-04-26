@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import TemplateView, CreateView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
+from django.core.paginator import Paginator
+from django.urls import reverse_lazy, reverse
 from django.http import HttpResponse
-from .forms import UserRegistrationForm
-from .models import Client, Category, Service, Request as ServiceRequest, TimeTransaction, Report, Review
+from .forms import UserRegistrationForm, ProfileEditForm
+from .models import Client, Category, Service, Request as ServiceRequest, TimeTransaction, Report, Review, TimeAccount
 from django.db.models import Q, Avg
 from django.db import transaction
 from django.utils import timezone
@@ -22,6 +23,19 @@ class HomeView(TemplateView):
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard.html'
     login_url = '/login/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        time_account, _ = TimeAccount.objects.get_or_create(client=user, defaults={'balance_hours': 5.00})
+        context['time_account'] = time_account
+        context['my_services_count'] = Service.objects.filter(client=user).count()
+        context['pending_requests_count'] = ServiceRequest.objects.filter(provider_client=user, request_status='pending').count()
+        context['recent_services'] = Service.objects.filter(status='active').exclude(client=user).order_by('-created_at')[:6]
+        context['active_requests'] = ServiceRequest.objects.filter(
+            Q(requester_client=user) | Q(provider_client=user)
+        ).exclude(request_status__in=['completed', 'cancelled']).order_by('-requested_at')[:5]
+        return context
 
 class RegisterView(CreateView):
     template_name = 'register.html'
@@ -167,13 +181,32 @@ def search_services(request):
 def request_service(request, pk):
     if request.method == "POST":
         service = get_object_or_404(Service, pk=pk)
+        
+        # Validar que no sea el propio servicio
+        if service.client == request.user:
+            return HttpResponse("No puedes solicitar tu propio servicio.", status=400)
+        
         horas_solicitadas = float(request.POST.get('requested_hours', service.estimated_time))
         mensaje = request.POST.get('request_message', '')
         
-        if float(request.user.time_account.balance_hours) < horas_solicitadas:
-            return HttpResponse("Saldo insuficiente", status=400)
+        # Obtener o crear TimeAccount si no existe
+        time_account, _ = TimeAccount.objects.get_or_create(
+            client=request.user,
+            defaults={'balance_hours': 5.00}
+        )
+        
+        if float(time_account.balance_hours) < horas_solicitadas:
+            response = HttpResponse("Saldo insuficiente", status=400)
+            response['HX-Trigger'] = json.dumps({"show-toast": {"message": "No tienes saldo suficiente para esta solicitud.", "type": "error"}})
+            return response
             
-        request_obj = ServiceRequest.objects.create(
+        # Validar que no exista ya una solicitud pendiente del mismo usuario para el mismo servicio
+        if ServiceRequest.objects.filter(service=service, requester_client=request.user, request_status='pending').exists():
+            response = HttpResponse("Ya tienes una solicitud pendiente para este servicio.", status=400)
+            response['HX-Trigger'] = json.dumps({"show-toast": {"message": "Ya enviaste una solicitud pendiente para este servicio.", "type": "error"}})
+            return response
+        
+        ServiceRequest.objects.create(
             service=service,
             requester_client=request.user,
             provider_client=service.client,
@@ -182,9 +215,8 @@ def request_service(request, pk):
             request_status='pending'
         )
         
-        # Descontar horas del balance
-        request.user.time_account.balance_hours = float(request.user.time_account.balance_hours) - horas_solicitadas
-        request.user.time_account.save()
+        time_account.balance_hours = float(time_account.balance_hours) - horas_solicitadas
+        time_account.save()
         
         response = HttpResponse("")
         response['HX-Trigger'] = json.dumps({"show-toast": {"message": "¡Solicitud enviada correctamente!", "type": "success"}})
@@ -376,4 +408,43 @@ class UserReviewsPartialView(TemplateView):
         reviews = Review.objects.filter(reviewed_client=client).order_by('-created_at')
         context['reviews'] = reviews
         context['average_rating'] = reviews.aggregate(Avg('rating'))['rating__avg']
+        return context
+
+# --- User Profile ---
+class ProfileEditView(LoginRequiredMixin, TemplateView):
+    template_name = 'profile_edit.html'
+    login_url = '/login/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = ProfileEditForm(instance=self.request.user)
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = ProfileEditForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect(reverse('profile_edit') + '?saved=1')
+        return render(request, 'profile_edit.html', {'form': form})
+
+# --- Transaction History ---
+class TransactionHistoryView(LoginRequiredMixin, TemplateView):
+    template_name = 'transactions.html'
+    login_url = '/login/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        transactions = TimeTransaction.objects.filter(
+            Q(sender_client=user) | Q(receiver_client=user)
+        ).order_by('-created_at')
+        
+        paginator = Paginator(transactions, 20)
+        page_number = self.request.GET.get('page', 1)
+        context['transactions'] = paginator.get_page(page_number)
+        
+        time_account, _ = TimeAccount.objects.get_or_create(client=user, defaults={'balance_hours': 5.00})
+        context['time_account'] = time_account
+        
         return context

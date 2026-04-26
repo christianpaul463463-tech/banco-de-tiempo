@@ -1,8 +1,8 @@
 {% extends "base.html" %}
+{% load l10n %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" 
-     x-data="{ 
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="{ 
          modalOpen: false, 
          serviceId: null, 
          serviceTitle: '', 
@@ -10,7 +10,7 @@
          estimatedTime: 0,
          requestedHours: 0,
          message: '',
-         balance: {{ request.user.time_account.balance_hours|default:0|floatformat:2 }},
+         balance: {{ request.user.time_account.balance_hours|default:0|unlocalize }},
          
          openModal(id, title, provider, time) {
              this.serviceId = id;
@@ -26,7 +26,7 @@
              this.modalOpen = false;
          }
      }">
-    
+
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900">Explorar servicios</h1>
         <p class="text-gray-500 mt-1">Encuentra las habilidades que necesitas y solicita un intercambio.</p>
@@ -37,26 +37,25 @@
         <div class="flex-grow">
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
                 </div>
-                <input type="text" name="q" placeholder="Buscar por título o descripción..." 
-                       class="pl-10 block w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                       hx-get="{% url 'search_services' %}" 
-                       hx-trigger="input changed delay:400ms, search" 
-                       hx-target="#lista-servicios" 
-                       hx-include="[name='categoria']">
+                <input type="text" name="q" placeholder="Buscar por título o descripción..."
+                    class="pl-10 block w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    hx-get="{% url 'search_services' %}" hx-trigger="input changed delay:400ms, search"
+                    hx-target="#lista-servicios" hx-include="[name='categoria']">
             </div>
         </div>
         <div class="w-full md:w-64">
-            <select name="categoria" 
-                    class="block w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    hx-get="{% url 'search_services' %}" 
-                    hx-trigger="change" 
-                    hx-target="#lista-servicios" 
-                    hx-include="[name='q']">
+            <select name="categoria"
+                class="block w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                hx-get="{% url 'search_services' %}" hx-trigger="change" hx-target="#lista-servicios"
+                hx-include="[name='q']">
                 <option value="">Todas las categorías</option>
                 {% for cat in categories %}
-                    <option value="{{ cat.pk }}">{{ cat.category_name }}</option>
+                <option value="{{ cat.pk }}">{{ cat.category_name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -68,60 +67,95 @@
     </div>
 
     <!-- Modal for Requesting Service -->
-    <div x-show="modalOpen" class="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" x-cloak>
+    <div x-show="modalOpen" class="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+        aria-modal="true" x-cloak>
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <!-- Background overlay -->
-            <div x-show="modalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <div x-show="modalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
 
             <!-- Modal Panel -->
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div x-show="modalOpen" @click.outside="cerrarModal()" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100">
-                
-                <form :hx-post="'/servicios/' + serviceId + '/solicitar/'" @htmx:after-request="if($event.detail.successful) cerrarModal()">
-                    {% csrf_token %}
+            <div x-show="modalOpen" @click.outside="cerrarModal()" x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100">
+
+                <form id="form-solicitar" hx-post="/servicios/0/solicitar/"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                    hx-on:htmx:after-request="if(event.detail.successful) cerrarModal()"
+                    x-effect="$el.setAttribute('hx-post', '/servicios/' + (serviceId || 0) + '/solicitar/'); htmx.process($el)">
+
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <div
+                                class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
                             </div>
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                                 <h3 class="text-lg leading-6 font-bold text-gray-900" id="modal-title">
                                     Solicitar <span x-text="serviceTitle"></span>
                                 </h3>
                                 <div class="mt-2">
-                                    <p class="text-sm text-gray-500 mb-4">Se enviará una solicitud a <span class="font-semibold text-gray-700" x-text="providerName"></span>.</p>
-                                    
+                                    <p class="text-sm text-gray-500 mb-4">Se enviará una solicitud a <span
+                                            class="font-semibold text-gray-700" x-text="providerName"></span>.</p>
+
                                     <div class="space-y-4">
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Horas a solicitar</label>
-                                            <input type="number" name="requested_hours" x-model="requestedHours" required min="0.5" step="0.5" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Horas a
+                                                solicitar</label>
+                                            <input type="number" name="requested_hours" x-model="requestedHours"
+                                                required min="0.5" step="0.5"
+                                                class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full">
                                         </div>
-                                        
+
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Mensaje para el proveedor (opcional)</label>
-                                            <textarea name="request_message" x-model="message" rows="3" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full" placeholder="Hola, me gustaría agendar este servicio para el próximo martes..."></textarea>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Mensaje para el
+                                                proveedor (opcional)</label>
+                                            <textarea name="request_message" x-model="message" rows="3"
+                                                class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full"
+                                                placeholder="Hola, me gustaría agendar este servicio para el próximo martes..."></textarea>
                                         </div>
                                     </div>
-                                    
-                                    <div class="mt-6 p-4 rounded-lg bg-gray-50 border border-gray-100 flex justify-between items-center">
+
+                                    <div
+                                        class="mt-6 p-4 rounded-lg bg-gray-50 border border-gray-100 flex justify-between items-center">
                                         <span class="text-sm text-gray-600">Tu saldo actual:</span>
-                                        <span class="font-bold" :class="{'text-indigo-600': requestedHours <= balance, 'text-red-600': requestedHours > balance}" x-text="balance + ' hrs'"></span>
+                                        <span class="font-bold"
+                                            :class="{'text-indigo-600': requestedHours <= balance, 'text-red-600': requestedHours > balance}"
+                                            x-text="balance + ' hrs'"></span>
                                     </div>
-                                    
+
                                     <!-- Warning Validation -->
-                                    <div x-show="requestedHours > balance" class="mt-3 text-sm text-red-600 flex items-center gap-1" x-cloak>
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        No tienes saldo suficiente para esta solicitud.
+                                    <div x-show="requestedHours > balance || requestedHours <= 0"
+                                        class="mt-3 text-sm text-red-600 flex items-center gap-1" x-cloak>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span
+                                            x-text="requestedHours <= 0 ? 'Las horas deben ser mayor a 0.' : 'No tienes saldo suficiente para esta solicitud.'"></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
-                        <button type="submit" x-bind:disabled="requestedHours > balance" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button type="submit" x-bind:disabled="requestedHours > balance || requestedHours <= 0"
+                            class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                             Confirmar solicitud
                         </button>
-                        <button type="button" @click="cerrarModal()" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                        <button type="button" @click="cerrarModal()"
+                            class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
                             Cancelar
                         </button>
                     </div>
