@@ -28,3 +28,24 @@ class UserRegistrationForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+class ProfileEditForm(forms.ModelForm):
+    class Meta:
+        model = Client
+        fields = ['first_name', 'last_name', 'email', 'phone', 'biography', 'location']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full'}),
+            'last_name': forms.TextInput(attrs={'class': 'border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full'}),
+            'email': forms.EmailInput(attrs={'class': 'border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full'}),
+            'phone': forms.TextInput(attrs={'class': 'border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full'}),
+            'biography': forms.Textarea(attrs={'class': 'border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full', 'rows': 4}),
+            'location': forms.TextInput(attrs={'class': 'border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full'}),
+        }
+        labels = {
+            'first_name': 'Nombre',
+            'last_name': 'Apellido',
+            'email': 'Correo electrónico',
+            'phone': 'Teléfono',
+            'biography': 'Biografía',
+            'location': 'Ubicación',
+        }

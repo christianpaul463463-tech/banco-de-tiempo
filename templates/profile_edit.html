@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Editar perfil</h1>
+        <p class="text-gray-500 mt-1">Actualiza tu información personal y detalles de contacto.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Columna izquierda - tarjeta de perfil -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
+                <img class="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-indigo-50 object-cover" 
+                     src="https://ui-avatars.com/api/?name={{ request.user.get_full_name|urlencode }}&size=128&background=6366f1&color=fff" 
+                     alt="Avatar">
+                <h2 class="text-xl font-bold text-gray-900">{{ request.user.get_full_name }}</h2>
+                <p class="text-sm text-gray-500 mb-4">@{{ request.user.username }}</p>
+                
+                <div class="bg-indigo-50 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-indigo-800 font-medium">Saldo disponible</p>
+                    <p class="text-2xl font-bold text-indigo-600">{{ request.user.time_account.balance_hours|default:"0.00"|floatformat:2 }} hrs</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 text-sm border-t border-gray-100 pt-4">
+                    <div>
+                        <p class="text-gray-500">Ganadas</p>
+                        <p class="font-semibold text-green-600">{{ request.user.time_account.total_hours_earned|default:"0.00"|floatformat:2 }} hrs</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Gastadas</p>
+                        <p class="font-semibold text-red-600">{{ request.user.time_account.total_hours_spent|default:"0.00"|floatformat:2 }} hrs</p>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-400 mt-6 pt-4 border-t border-gray-100">
+                    Miembro desde {{ request.user.created_at|date:"F Y" }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Columna derecha - formulario -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.first_name.label }}</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.last_name.label }}</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.email.label }}</label>
+                        {{ form.email }}
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.phone.label }}</label>
+                            {{ form.phone }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.location.label }}</label>
+                            {{ form.location }}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ form.biography.label }}</label>
+                        {{ form.biography }}
+                    </div>
+                    
+                    <div class="flex items-center justify-end gap-4 pt-4 border-t border-gray-100">
+                        <a href="{% url 'dashboard' %}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Cancelar
+                        </a>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Guardar cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div x-data="{ saved: {{ request.GET.saved|default:'0' }} === 1 }"
+     x-init="if(saved) { window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Perfil actualizado correctamente', type: 'success' } })); }">
+</div>
+{% endblock %}
