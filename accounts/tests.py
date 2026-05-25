@@ -261,3 +261,136 @@ class HU004ServicePublicationTests(TestCase):
         self.assertEqual(srv.category, self.category)
         self.assertEqual(float(srv.estimated_time), 2.50)
         self.assertEqual(srv.status, 'active')
+
+class IntegracionRegistroLoginDashboardTest(TestCase):
+    def test_flujo_registro_login_dashboard(self):
+        """Valida el flujo de integración de un nuevo usuario desde el registro, pasando por el inicio de sesión, hasta acceder al dashboard principal."""
+        role_usuario = Role.objects.create(role_name='usuario', role_description='Usuario estándar')
+        
+        form_data = {
+            'first_name': 'Carlos',
+            'last_name': 'Gomez',
+            'email': 'carlos@example.com',
+            'username': 'carlosgomez',
+            'password1': 'TestingPass123!',
+            'password2': 'TestingPass123!',
+        }
+        response = self.client.post(reverse('register'), data=form_data)
+        
+        self.assertEqual(response.status_code, 302)
+        
+        self.assertTrue(Client.objects.filter(username='carlosgomez').exists())
+        user = Client.objects.get(username='carlosgomez')
+        self.assertEqual(user.role, role_usuario)
+        
+        self.assertTrue(hasattr(user, 'time_account'))
+        
+        login_response = self.client.post(reverse('login'), {
+            'username': 'carlosgomez',
+            'password': 'TestingPass123!'
+        })
+        
+        self.assertEqual(login_response.status_code, 302)
+        self.assertRedirects(login_response, reverse('dashboard'))
+        
+        dashboard_response = self.client.get(reverse('dashboard'))
+        self.assertEqual(dashboard_response.status_code, 200)
+
+class IntegracionCrearServicioTest(TestCase):
+    def setUp(self):
+        self.role_usuario = Role.objects.create(role_name='usuario', role_description='Usuario estándar')
+        self.category = Category.objects.create(category_name='Mantenimiento', category_description='Reparaciones del hogar')
+        self.user = Client.objects.create_user(username='testuser', password='password123', role=self.role_usuario)
+
+    def test_flujo_crear_y_explorar_servicio(self):
+        """Valida el flujo de integración donde un usuario autenticado publica un servicio y este es visible en las búsquedas y el explorador."""
+        self.client.force_login(self.user)
+        
+        post_data = {
+            'title': 'Plomería rápida',
+            'description': 'Reparación de griferías y tuberías con experiencia.',
+            'category': self.category.pk,
+            'estimated_time': '2.00',
+        }
+        response = self.client.post(reverse('service_create'), post_data)
+        
+        self.assertRedirects(response, reverse('service_list'))
+        
+        self.assertTrue(Service.objects.filter(title='Plomería rápida').exists())
+        srv = Service.objects.get(title='Plomería rápida')
+        self.assertEqual(srv.status, 'active')
+        self.assertEqual(srv.client, self.user)
+        
+        list_response = self.client.get(reverse('service_list'))
+        self.assertEqual(list_response.status_code, 200)
+        
+        search_response = self.client.get(reverse('search_services'), {'q': 'Plomería'})
+        self.assertEqual(search_response.status_code, 200)
+        self.assertContains(search_response, 'Plomería rápida')
+
+class IntegracionSolicitarYAceptarServicioTest(TestCase):
+    def setUp(self):
+        self.role_usuario = Role.objects.create(role_name='usuario', role_description='Usuario estándar')
+        self.category = Category.objects.create(category_name='Idiomas', category_description='Clases de lenguas')
+        
+        self.solicitante = Client.objects.create_user(username='solicitante', password='password123', role=self.role_usuario)
+        self.proveedor = Client.objects.create_user(username='proveedor', password='password123', role=self.role_usuario)
+        
+        self.sol_account = self.solicitante.time_account
+        self.sol_account.balance_hours = 10.00
+        self.sol_account.save()
+        
+        self.prov_account = self.proveedor.time_account
+        self.prov_account.balance_hours = 10.00
+        self.prov_account.save()
+        
+        self.service = Service.objects.create(
+            client=self.proveedor,
+            category=self.category,
+            title='Clases de Francés',
+            description='Aprende francés conversacional.',
+            estimated_time=2.00,
+            status='active'
+        )
+
+    def test_flujo_solicitar_aceptar_transferencia_horas(self):
+        """Valida el flujo de integración donde un usuario solicita un servicio, el proveedor lo acepta, las horas se transfieren correctamente y se genera la transacción correspondiente."""
+        self.client.force_login(self.solicitante)
+        
+        post_data = {
+            'requested_hours': '2.00',
+            'request_message': 'Me gustaría tomar una clase de conversación.'
+        }
+        request_response = self.client.post(reverse('request_service', args=[self.service.pk]), post_data)
+        
+        self.assertEqual(request_response.status_code, 200)
+        
+        self.assertEqual(ServiceRequest.objects.count(), 1)
+        req = ServiceRequest.objects.first()
+        self.assertEqual(req.service, self.service)
+        self.assertEqual(req.requester_client, self.solicitante)
+        self.assertEqual(req.provider_client, self.proveedor)
+        self.assertEqual(req.request_status, 'pending')
+        self.assertEqual(float(req.requested_hours), 2.00)
+        
+        self.sol_account.refresh_from_db()
+        self.assertEqual(float(self.sol_account.balance_hours), 8.00)
+        
+        self.client.force_login(self.proveedor)
+        
+        accept_response = self.client.post(reverse('accept_request', args=[req.pk]))
+        
+        self.assertEqual(accept_response.status_code, 200)
+        
+        req.refresh_from_db()
+        self.assertEqual(req.request_status, 'accepted')
+        
+        self.prov_account.refresh_from_db()
+        self.assertEqual(float(self.prov_account.balance_hours), 12.00)
+        
+        self.assertTrue(TimeTransaction.objects.filter(request=req).exists())
+        tx = TimeTransaction.objects.get(request=req)
+        self.assertEqual(tx.sender_client, self.solicitante)
+        self.assertEqual(tx.receiver_client, self.proveedor)
+        self.assertEqual(float(tx.hours_amount), 2.00)
+        self.assertEqual(tx.transaction_type, 'transfer')
