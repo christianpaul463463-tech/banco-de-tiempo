@@ -1,0 +1,31 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      DJANGO_SETTINGS_MODULE: timeconnect.settings
+      USE_SQLITE: "true"
+      SECRET_KEY: "django-insecure-clave-temporal-para-ci"
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install django pillow
+
+      - name: Ejecutar tests
+        run: python manage.py test accounts --verbosity=2
