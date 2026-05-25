@@ -9,8 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DJANGO_SETTINGS_MODULE: timeconnect.settings
-      USE_SQLITE: "true"
+      DJANGO_SETTINGS_MODULE: timeconnect.settings_ci
       SECRET_KEY: "django-insecure-clave-temporal-para-ci"
 
     steps:
