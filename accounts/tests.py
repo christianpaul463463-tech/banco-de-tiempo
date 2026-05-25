@@ -393,4 +393,238 @@ class IntegracionSolicitarYAceptarServicioTest(TestCase):
         self.assertEqual(tx.sender_client, self.solicitante)
         self.assertEqual(tx.receiver_client, self.proveedor)
         self.assertEqual(float(tx.hours_amount), 2.00)
-        self.assertEqual(tx.transaction_type, 'transfer')
+        self.assertEqual(tx.transaction_type, 'transfer')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class HU011UserReportsTests(TestCase):
+    def setUp(self):
+        self.reporter = Client.objects.create_user(username='reporter', password='password123')
+        self.reported = Client.objects.create_user(username='reported', password='password123')
+        self.category = Category.objects.create(category_name='Clases', category_description='Desc')
+        self.srv = Service.objects.create(client=self.reported, category=self.category, title='Clases', description='Desc', estimated_time=2.00, status='active')
+        self.service_req = ServiceRequest.objects.create(
+            service=self.srv, requester_client=self.reporter, provider_client=self.reported, requested_hours=2.00, request_status='accepted'
+        )
+
+    def test_report_self_prevented(self):
+        """Valida que un usuario no pueda reportarse a sí mismo."""
+        self.client.force_login(self.reporter)
+        response = self.client.post(reverse('report_create', args=[self.reporter.pk]), {
+            'report_reason': 'Autoreporte',
+            'report_description': 'Me porto mal'
+        })
+        self.assertRedirects(response, reverse('service_list'))
+        self.assertEqual(Report.objects.count(), 0)
+
+    def test_report_creation_success(self):
+        """Valida la creación exitosa de un reporte sobre otro usuario."""
+        self.client.force_login(self.reporter)
+        response = self.client.get(reverse('report_create', args=[self.reported.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['reported_client'], self.reported)
+        self.assertIn(self.service_req, response.context['related_requests'])
+
+        post_data = {
+            'report_reason': 'Incumplimiento',
+            'report_description': 'No se presento a la reunion pactada.',
+            'request_id': self.service_req.pk
+        }
+        response_post = self.client.post(reverse('report_create', args=[self.reported.pk]), post_data)
+        self.assertRedirects(response_post, reverse('dashboard'))
+        
+        self.assertEqual(Report.objects.count(), 1)
+        rep = Report.objects.first()
+        self.assertEqual(rep.reporter_client, self.reporter)
+        self.assertEqual(rep.reported_client, self.reported)
+        self.assertEqual(rep.request, self.service_req)
+        self.assertEqual(rep.report_reason, 'Incumplimiento')
+        self.assertEqual(rep.report_description, 'No se presento a la reunion pactada.')
+        self.assertEqual(rep.report_status, 'open')
+
+    def test_report_duplicate_prevented(self):
+        """Valida que no se pueda reportar a un usuario si ya hay un reporte abierto o en revisión."""
+        Report.objects.create(
+            reporter_client=self.reporter,
+            reported_client=self.reported,
+            report_reason='Abuso',
+            report_description='Desc',
+            report_status='open'
+        )
+        
+        self.client.force_login(self.reporter)
+        response = self.client.post(reverse('report_create', args=[self.reported.pk]), {
+            'report_reason': 'Otro motivo',
+            'report_description': 'Otra desc'
+        })
+        self.assertRedirects(response, reverse('service_list'))
+        self.assertEqual(Report.objects.count(), 1)
+
+class HU012AdminPanelTests(TestCase):
+    def setUp(self):
+        self.role_admin = Role.objects.create(role_name='administrador', role_description='Administrador')
+        self.role_user = Role.objects.create(role_name='usuario', role_description='Usuario regular')
+        
+        self.admin = Client.objects.create_user(username='admin', password='password123', role=self.role_admin)
+        self.user = Client.objects.create_user(username='user', password='password123', role=self.role_user)
+        self.reported = Client.objects.create_user(username='reported', password='password123', role=self.role_user)
+        
+        self.report = Report.objects.create(
+            reporter_client=self.user,
+            reported_client=self.reported,
+            report_reason='Abuso',
+            report_description='Mal comportamiento',
+            report_status='open'
+        )
+        self.cat = Category.objects.create(category_name='Clases', category_description='Desc')
+
+    def test_admin_panel_access_denied_for_anonymous(self):
+        """Valida que el panel de administración deniegue el acceso a usuarios anónimos."""
+        response = self.client.get(reverse('admin_panel'))
+        self.assertRedirects(response, reverse('home'))
+
+    def test_admin_panel_access_denied_for_regular_user(self):
+        """Valida que el panel de administración deniegue el acceso a usuarios sin rol de administrador."""
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('admin_panel'))
+        self.assertRedirects(response, reverse('home'))
+
+    def test_admin_panel_access_allowed_for_admin(self):
+        """Valida el acceso correcto al panel de administración para un administrador."""
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('admin_panel'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('open_reports', response.context)
+        self.assertIn('categories', response.context)
+
+    def test_admin_change_report_status_unauthorized(self):
+        """Valida la denegación de cambios en reportes a usuarios no autorizados."""
+        self.client.force_login(self.user)
+        response = self.client.post(reverse('admin_change_report_status', args=[self.report.pk, 'under_review']))
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_change_report_status_invalid_method(self):
+        """Valida que el cambio de estado de reporte rechace métodos diferentes a POST."""
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('admin_change_report_status', args=[self.report.pk, 'under_review']))
+        self.assertEqual(response.status_code, 405)
+
+    def test_admin_change_report_status_under_review(self):
+        """Valida el cambio exitoso de estado de un reporte a 'under_review'."""
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('admin_change_report_status', args=[self.report.pk, 'under_review']))
+        self.assertEqual(response.status_code, 200)
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.report_status, 'under_review')
+        self.assertIn('HX-Trigger', response)
+
+    def test_admin_change_report_status_resolved_deactivates_user(self):
+        """Valida que al resolver un reporte se desactive el usuario reportado."""
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('admin_change_report_status', args=[self.report.pk, 'resolved']))
+        self.assertEqual(response.status_code, 200)
+        
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.report_status, 'resolved')
+        self.assertIsNotNone(self.report.resolved_at)
+        
+        self.reported.refresh_from_db()
+        self.assertFalse(self.reported.is_active)
+
+    def test_admin_change_report_status_dismissed(self):
+        """Valida el desestimado de un reporte manteniendo al usuario activo."""
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('admin_change_report_status', args=[self.report.pk, 'dismissed']))
+        self.assertEqual(response.status_code, 200)
+        
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.report_status, 'dismissed')
+        self.assertIsNotNone(self.report.resolved_at)
+        
+        self.reported.refresh_from_db()
+        self.assertTrue(self.reported.is_active)
+
+    def test_admin_category_list_unauthorized(self):
+        """Valida la denegación de visualización de categorías a usuarios no autorizados."""
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('admin_category_list'))
+        self.assertEqual(response.status_code, 401)
+
+    def test_admin_category_list_success(self):
+        """Valida la obtención correcta de la tabla de categorías por parte del administrador."""
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('admin_category_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('categories', response.context)
+
+    def test_admin_create_category_success(self):
+        """Valida la creación exitosa de una nueva categoría de servicio."""
+        response = self.client.post(reverse('admin_create_category'), {
+            'category_name': 'Hogar y Jardin',
+            'category_description': 'Servicios de jardineria y limpieza'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Category.objects.count(), 2)
+        new_cat = Category.objects.get(category_name='Hogar y Jardin')
+        self.assertEqual(new_cat.category_description, 'Servicios de jardineria y limpieza')
+
+    def test_admin_create_category_invalid_method(self):
+        """Valida la denegación de creación de categorías mediante peticiones no POST."""
+        response = self.client.get(reverse('admin_create_category'))
+        self.assertEqual(response.status_code, 405)
+
+    def test_admin_delete_category_success(self):
+        """Valida la eliminación exitosa de una categoría no utilizada."""
+        response = self.client.delete(reverse('admin_delete_category', args=[self.cat.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content.decode(), '')
+        self.assertFalse(Category.objects.filter(pk=self.cat.pk).exists())
+
+    def test_admin_delete_category_in_use_fails(self):
+        """Valida que la eliminación de una categoría en uso retorne un mensaje de error."""
+        Service.objects.create(
+            client=self.user,
+            category=self.cat,
+            title='Servicio en categoria',
+            description='Desc',
+            estimated_time=1.00,
+            status='active'
+        )
+        response = self.client.delete(reverse('admin_delete_category', args=[self.cat.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Error: Categoría en uso.", response.content.decode())
+        self.assertTrue(Category.objects.filter(pk=self.cat.pk).exists())
+
+    def test_admin_delete_category_invalid_method(self):
+        """Valida la denegación de eliminación de categorías mediante peticiones no DELETE."""
+        response = self.client.post(reverse('admin_delete_category', args=[self.cat.pk]))
+        self.assertEqual(response.status_code, 405)
