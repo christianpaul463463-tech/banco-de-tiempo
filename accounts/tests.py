@@ -628,3 +628,141 @@ class HU012AdminPanelTests(TestCase):
         """Valida la denegación de eliminación de categorías mediante peticiones no DELETE."""
         response = self.client.post(reverse('admin_delete_category', args=[self.cat.pk]))
         self.assertEqual(response.status_code, 405)
+
+class HU009ProfileEditTests(TestCase):
+    def setUp(self):
+        self.user = Client.objects.create_user(
+            username='user', password='password123',
+            first_name='OriginalName', last_name='OriginalLastName',
+            email='orig@example.com'
+        )
+
+    def test_profile_edit_requires_login(self):
+        """Valida que la edición de perfil requiera autenticación."""
+        response = self.client.get(reverse('profile_edit'))
+        self.assertRedirects(response, '/login/?next=/perfil/editar/')
+
+    def test_profile_edit_saves_changes(self):
+        """Valida que los cambios de perfil válidos se guarden de forma correcta."""
+        self.client.force_login(self.user)
+        
+        response = self.client.get(reverse('profile_edit'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('form', response.context)
+        
+        post_data = {
+            'first_name': 'NewName',
+            'last_name': 'NewLastName',
+            'email': 'new@example.com',
+            'phone': '123456789',
+            'biography': 'My biography',
+            'location': 'My Location'
+        }
+        response_post = self.client.post(reverse('profile_edit'), post_data)
+        self.assertRedirects(response_post, reverse('profile_edit') + '?saved=1')
+        
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, 'NewName')
+        self.assertEqual(self.user.last_name, 'NewLastName')
+        self.assertEqual(self.user.email, 'new@example.com')
+        self.assertEqual(self.user.phone, '123456789')
+        self.assertEqual(self.user.biography, 'My biography')
+        self.assertEqual(self.user.location, 'My Location')
+
+    def test_profile_edit_invalid_data(self):
+        """Valida que los datos inválidos en la edición de perfil muestren errores."""
+        self.client.force_login(self.user)
+        post_data = {
+            'first_name': 'NewName',
+            'last_name': 'NewLastName',
+            'email': 'invalidemail',
+            'phone': '123456789',
+            'biography': 'My biography',
+            'location': 'My Location'
+        }
+        response = self.client.post(reverse('profile_edit'), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['form'].is_valid())
+        self.assertIn('email', response.context['form'].errors)
+
+class HU010ReviewsTests(TestCase):
+    def setUp(self):
+        self.provider = Client.objects.create_user(username='provider', password='password123')
+        self.requester = Client.objects.create_user(username='requester', password='password123')
+        self.other = Client.objects.create_user(username='other', password='password123')
+        
+        self.category = Category.objects.create(category_name='Clases', category_description='Desc')
+        self.srv = Service.objects.create(client=self.provider, category=self.category, title='Clases', description='Desc', estimated_time=2.00, status='active')
+        
+        self.service_req = ServiceRequest.objects.create(
+            service=self.srv, requester_client=self.requester, provider_client=self.provider, requested_hours=2.00, request_status='accepted'
+        )
+
+    def test_review_creation_by_requester(self):
+        """Valida la creación exitosa de una reseña por parte del solicitante del servicio."""
+        self.client.force_login(self.requester)
+        response = self.client.get(reverse('review_create', args=[self.service_req.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context.get('already_reviewed', False))
+        
+        post_data = {
+            'rating': 5,
+            'comment': 'Excelente servicio!'
+        }
+        response_post = self.client.post(reverse('review_create', args=[self.service_req.pk]), post_data)
+        self.assertRedirects(response_post, reverse('requests_inbox'))
+        
+        self.assertEqual(Review.objects.count(), 1)
+        rev = Review.objects.first()
+        self.assertEqual(rev.request, self.service_req)
+        self.assertEqual(rev.reviewer_client, self.requester)
+        self.assertEqual(rev.reviewed_client, self.provider)
+        self.assertEqual(rev.rating, 5)
+        self.assertEqual(rev.comment, 'Excelente servicio!')
+        
+        self.service_req.refresh_from_db()
+        self.assertEqual(self.service_req.request_status, 'completed')
+        self.assertIsNotNone(self.service_req.completed_at)
+
+    def test_review_denied_for_non_requester(self):
+        """Valida que un usuario diferente al solicitante no pueda crear una reseña."""
+        self.client.force_login(self.provider)
+        response = self.client.get(reverse('review_create', args=[self.service_req.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_review_denied_if_not_accepted(self):
+        """Valida que no se pueda crear una reseña si la solicitud no está aceptada."""
+        self.service_req.request_status = 'pending'
+        self.service_req.save()
+        
+        self.client.force_login(self.requester)
+        response = self.client.get(reverse('review_create', args=[self.service_req.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_review_duplicate_prevented(self):
+        """Valida que no se pueda registrar más de una reseña por solicitud."""
+        self.client.force_login(self.requester)
+        Review.objects.create(request=self.service_req, reviewer_client=self.requester, reviewed_client=self.provider, rating=4, comment='Buen trabajo')
+        
+        response = self.client.get(reverse('review_create', args=[self.service_req.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['already_reviewed'])
+
+        post_data = {'rating': 5, 'comment': 'Intento duplicar'}
+        response_post = self.client.post(reverse('review_create', args=[self.service_req.pk]), post_data)
+        self.assertRedirects(response_post, reverse('requests_inbox'))
+        self.assertEqual(Review.objects.count(), 1)
+
+    def test_user_reviews_partial_view(self):
+        """Valida el renderizado del listado de reseñas de un usuario con su promedio."""
+        Review.objects.create(request=self.service_req, reviewer_client=self.requester, reviewed_client=self.provider, rating=4, comment='Buen trabajo')
+        
+        srv2 = Service.objects.create(client=self.provider, category=self.category, title='Clases 2', description='Desc', estimated_time=2.00, status='active')
+        req2 = ServiceRequest.objects.create(service=srv2, requester_client=self.other, provider_client=self.provider, requested_hours=2.00, request_status='completed')
+        Review.objects.create(request=req2, reviewer_client=self.other, reviewed_client=self.provider, rating=5, comment='Increible')
+
+        response = self.client.get(reverse('user_reviews', args=[self.provider.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('reviews', response.context)
+        self.assertEqual(len(response.context['reviews']), 2)
+        self.assertEqual(response.context['average_rating'], 4.5)
